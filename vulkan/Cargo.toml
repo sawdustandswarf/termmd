@@ -1,0 +1,10 @@
+[package]
+name = "termmd-vulkan"
+description = "Vulkan bindings of our own: device setup, dma-buf images and sync files, for termmd and its embedded apps"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

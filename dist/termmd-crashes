@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# termmd-crashes: what made termmd windows exit, from the evidence they leave.
+#
+#   termmd-crashes           # a summary: deaths by cause, coredumps, traces
+#   termmd-crashes PID       # everything about one: its log lines, trace, core
+#
+# A window that exits on an error logs it as "fatal" in termmd.log; a panic
+# is logged as "panic" and, in a release build (panic = abort), leaves a
+# coredump. A Wayland protocol error also saves a trace of the connection's
+# last messages beside the log (wayland-<time>-<pid>.trace).
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}/termmd
+logs=("$state/termmd.log.old" "$state/termmd.log")
+
+lines() { cat "${logs[@]}" 2>/dev/null | grep -E '\] (fatal|panic):' ; }
+
+# Fatal errors that aren't crashes: a command-line mistake, or a client
+# (`termmd --md`, `--embed`) whose terminal didn't answer.
+not_crash='unknown option|didn.t show the region'
+
+if [[ -n $1 ]]; then
+  pid=$1
+  echo "== log ($state/termmd.log)"
+  cat "${logs[@]}" 2>/dev/null | grep -F "[$pid]" || echo "(nothing logged by $pid)"
+  for t in "$state"/wayland-*-"$pid".trace; do
+    [[ -e $t ]] || continue
+    echo; echo "== trace $t"
+    # The error and the named object's history; the rest is in the file.
+    sed -n '1,/^ids made/p' "$t" | head -60
+  done
+  if coredumpctl --no-pager list "$pid" &>/dev/null; then
+    echo; echo "== coredump"
+    coredumpctl --no-pager info "$pid" | sed -n '1,40p'
+  fi
+  exit 0
+fi
+
+echo "== deaths by cause (termmd.log)"
+lines | grep -Ev "$not_crash" \
+  | sed -E 's/^[^ ]+ \[[0-9]+\] //; s/invalid object [0-9]+/invalid object N/; s/ \(trace: .*\)$//' \
+  | sort | uniq -c | sort -rn
+echo
+echo "== the last ten"
+lines | grep -Ev "$not_crash" | tail -10
+echo
+echo "== coredumps"
+coredumpctl --no-pager list 2>/dev/null | awk 'NR == 1 || /\/termmd( |$)/' | tail -10
+coredumpctl --no-pager list 2>/dev/null | grep -q '/termmd\b' || echo "(none for termmd)"
+echo
+echo "== Wayland traces"
+ls -1t "$state"/wayland-*.trace 2>/dev/null || echo "(none yet: the next protocol error saves one)"
+echo
+echo "termmd-crashes PID shows one in full."

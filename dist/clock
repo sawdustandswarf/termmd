@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# clock: a big HH:MM:SS clock, redrawn each second, in any terminal.
+# Ctrl+C stops it.
+#
+# In termmd, show it in a pane of its own in the top-right corner, where
+# it stays when the window is resized:
+#   termmd --embed='fixed=top-right w=29 h=7 focus=no' clock &
+# (focus=no: the shell keeps the keyboard focus.)
+
+# A 3×5 font: each glyph is five rows of three, '#' for a block.
+declare -A FONT=(
+  [0]="### # # # # # # ###"  [1]="  #   #   #   #   #"
+  [2]="###   # ### #   ###"  [3]="###   # ###   # ###"
+  [4]="# # # # ###   #   #"  [5]="### #   ###   # ###"
+  [6]="### #   ### # # ###"  [7]="###   #   #   #   #"
+  [8]="### # # ### # # ###"  [9]="### # # ###   # ###"
+)
+COLON=(" " "#" " " "#" " ")
+
+printf '\033[?25l'                       # no cursor
+trap 'printf "\033[?25h\033[0m"; exit' INT TERM HUP
+while :; do
+  rows=("" "" "" "" "")
+  t=$(date +%H:%M:%S)
+  for ((i = 0; i < ${#t}; i++)); do
+    c=${t:i:1}
+    for r in 0 1 2 3 4; do
+      if [[ $c == : ]]; then
+        glyph=${COLON[r]}
+      else
+        glyph=${FONT[$c]:r*4:3}
+      fi
+      rows[r]+="${glyph} "
+    done
+  done
+  # One write per frame, over the last one: nothing is ever cleared, each
+  # row is written and then its end erased (\033[K), so it is never blank;
+  # held by the terminal until it is whole (synchronized output, mode 2026;
+  # terminals without it ignore it).
+  frame=$'\033[?2026h\033[H\033[K\n'
+  for r in 0 1 2 3 4; do
+    frame+=" ${rows[r]//#/█}"$'\033[K\n'
+  done
+  printf '%s\033[?2026l' "$frame"
+  # Wake just after the next second starts.
+  wait=$(( 1000 - 10#$(date +%3N) ))
+  sleep "$(( wait / 1000 )).$(printf %03d $(( wait % 1000 )))"
+done

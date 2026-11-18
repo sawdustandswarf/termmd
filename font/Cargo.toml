@@ -1,0 +1,10 @@
+[package]
+name = "termmd-font"
+description = "OpenType and TrueType fonts read, outlines and all, our own: for termmd and its embedded apps"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

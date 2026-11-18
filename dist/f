@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# f: show file. Like `cat`, but the file stays tied to the file on disk,
+# following changes to it; a file that isn't Markdown is shown as Markdown made
+# for it: a PNG as its image, CSV as a table, code in a block
+# (docs/MARKDOWN.md, "Linked documents"). Piped, it prints that Markdown.
+exec termmd --show "$@"

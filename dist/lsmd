@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# lsmd: Omarchy's `ls` (eza -lh --group-directories-first --icons) with its
+# colours and icons, as a Markdown table in a termmd Markdown region
+# (DESIGN.md, "Rich lines"). Arguments go to eza, so `alias ls=lsmd` works;
+# `--place KEYS` first draws it as a block ('right w=40% wrap=left'), and
+# `--doc NAME` adds it to that session document.
+set -o pipefail
+
+keys=
+while [[ $1 == --place || $1 == --doc ]]; do
+    case $1,$2 in
+        --doc,*) keys+=";doc=$2" ;;
+        --place,*=*) keys+=";$2" ;;
+        --place,*) keys+=";place=$2" ;;
+    esac
+    shift 2
+done
+
+# As the alias, but colour and icons kept through the pipe, and dates two
+# words wide so the columns can be split.
+eza_args=(-lh --group-directories-first --icons=always --color=always --time-style=long-iso)
+
+# Without a path eza reads names from stdin when it isn't a terminal.
+paths=.
+for a in "$@"; do
+    [[ $a != -* ]] && paths=
+done
+
+printf '\033]7701;md%s\033\\' "$keys"
+eza "${eza_args[@]}" "$@" $paths < /dev/null | awk '
+    function visible(s) { gsub(/\033\[[0-9;]*m/, "", s); return s }
+    function cell(s) { gsub(/\|/, "\\|", s); return s }
+
+    # The header: each column name underlined on its own.
+    /^\033\[4m/ {
+        cols = 0
+        s = $0
+        while (match(s, /\033\[4m[^\033]*\033\[0m/)) {
+            h[++cols] = substr(s, RSTART, RLENGTH)
+            name = visible(h[cols])
+            words[cols] = name ~ /^Date/ ? 2 : 1
+            right[cols] = name ~ /^(Size|Links|Blocks|Inode)$/
+            s = substr(s, RSTART + RLENGTH)
+        }
+        # A blank line first, so a previous table has ended.
+        print ""
+        row = "|"
+        delim = "|"
+        for (i = 1; i <= cols; i++) {
+            row = row " " h[i] " |"
+            delim = delim (right[i] ? "--:|" : ":--|")
+        }
+        print row
+        print delim
+        next
+    }
+
+    # An entry: one or two words per column, then the name (the rest).
+    cols && NF {
+        s = $0
+        row = "|"
+        for (i = 1; i < cols; i++) {
+            text = ""
+            for (w = 0; w < words[i] && match(s, /[^ ]+/); w++) {
+                text = text (w ? " " : "") substr(s, RSTART, RLENGTH)
+                s = substr(s, RSTART + RLENGTH)
+            }
+            row = row " " cell(text) " |"
+        }
+        sub(/^ +/, "", s)
+        # Nerd Font icons overhang their cell: more room before the name.
+        sub(/ /, "  ", s)
+        print row " " cell(s) " |"
+        next
+    }
+
+    # Anything else ends the table: "dir:" headings, blank lines.
+    {
+        cols = 0
+        v = visible($0)
+        if (v ~ /:$/) print "### " substr(v, 1, length(v) - 1)
+        else print
+    }'
+status=$?
+printf '\033]7701;md-end\033\\'
+exit $status

@@ -1,0 +1,185 @@
+# termmd Markdown styling: copy to ~/.config/termmd/markdown.toml and edit.
+#
+# termmd styles Markdown regions (`termmd --md FILE`) with these classes.
+# Layers, later winning key by key: termmd's built-in styles (shown here),
+# the current Omarchy theme's termmd-markdown.toml, then this file. Set only
+# what you want to change. Edits apply to new output as soon as you save.
+#
+# Keys (the same as the OSC 7701 protocol, DESIGN.md "Rich lines"):
+#   size    1 to 4, in steps of 1/8 (1.5, 1.25)
+#   bold, dim, italic
+#   underline, strike   (inline spans only)
+#   fg      text colour: palette index 0-255 (follows the theme) or "#rrggbb"
+#   bg      band behind the line: index, "#rrggbb", "shade" or "none"
+#   rule    colour of borders and table rules: index or "#rrggbb"
+#   border  list of "top", "bottom", "middle", "left", "sides", "grid", or "none"
+#   pad     [above, below] in line heights, up to 2
+#   align   "left", "center", "right"
+#   font    "prop" (font.prop in termmd.toml, if set) or "mono"
+#   number  headings only: true shows the heading's number (1, 1.1, 2), counted
+#           through its document, across sections
+#
+# Inline spans ([strong] to [highlight]) take only bold, dim, italic,
+# underline, strike, fg, bg and font = "mono".
+#
+# Other sections define classes of that name for programs to use
+# (ESC ] 7701 ; use ; NAME ST).
+
+[h1]
+size = 2
+bold = true
+border = ["bottom"]
+pad = [0.5, 0.25]
+font = "prop"
+
+[h2]
+size = 1.5
+bold = true
+border = ["bottom"]
+pad = [0.5, 0.25]
+font = "prop"
+
+[h3]
+size = 1.25
+bold = true
+pad = [0.25, 0]
+font = "prop"
+
+[h4]
+bold = true
+font = "prop"
+
+[h5]
+bold = true
+font = "prop"
+
+[h6]
+bold = true
+font = "prop"
+
+# Paragraphs and list items.
+[text]
+font = "prop"
+
+# Horizontal rules (---).
+[hr]
+border = ["middle"]
+
+# Fenced code blocks: monospace on a shaded band.
+[code]
+bg = "shade"
+
+[quote]
+border = ["left"]
+dim = true
+font = "prop"
+
+# Tables: right-aligned columns put numbers on their decimal points. A table
+# wider than the window scrolls sideways (overflow = "scroll": a sideways swipe,
+# or Shift and the wheel, over it), or wraps its cells within their columns
+# ("wrap"), or is cut at the edge ("cut").
+[table]
+border = ["grid"]
+pad = [0.25, 0.25]
+font = "prop"
+overflow = "scroll"
+
+# The table cell holding the edit cursor: bg fills it (not unless set), and rule
+# goes around it (the text's colour unless set).
+[table-focus]
+
+# The table cell under the mouse, the same way.
+[table-hover]
+bg = "shade"
+
+# The block being edited, as it reads: bg fills it (not unless set), and rule goes
+# around it (the text's colour unless set).
+[edit]
+
+# The box of its source below, in the style of [code]: rule is the box's colour.
+# Not coloured unless set.
+[edit-box]
+
+# The focused table cell's text in that box. Not marked unless set.
+[edit-mark]
+
+# Footnote definitions ([^1]: ...).
+[footnote]
+dim = true
+font = "prop"
+
+# Inline spans.
+
+# **strong**
+[strong]
+bold = true
+
+# *emphasis*
+[em]
+italic = true
+
+# `code`: monospace on a shade, even in prop lines.
+[code-span]
+font = "mono"
+bg = "shade"
+
+# [text](url): clickable, as OSC 8 links are.
+[link]
+underline = true
+fg = 4
+
+# ~~strikethrough~~
+[strike]
+strike = true
+
+# ==highlight==
+[highlight]
+bg = 3
+fg = 0
+
+# Images: a line that is just ![alt](path), or ![alt](path){place=right w=40%}
+# with its own settings. The same placement keys as Markdown blocks:
+#   place     "full" (rows of its own), "left", "center", "right"
+#   at        a column to start at
+#   fixed     "X,Y": stays on that screen cell while text scrolls (negative:
+#             from the right or bottom), taking no rows
+#   w, h      cells (10), percent of the screen ("40%") or "auto" (its own
+#             size); one given keeps its shape, both stretch it
+#   max-w, max-h   it is shrunk, keeping its shape, to fit these
+#   wrap      "left", "right": text beside it, in the columns on that side;
+#             "both": on the left, then the right of each row; "largest": on
+#             the wider side; "none": text runs on over it (or under, fixed);
+#             "skip": text resumes below. Default: "largest" for center and
+#             at, "none" for fixed, otherwise "skip"
+#   gap, min-text  space beside it and the narrowest text beside it (for wrap)
+#   z         stacking order: a number, "above" (0) or "below" (-1); 0 and up
+#             draw over text, below 0 under it, higher over lower
+#   opacity   percent, 0 to 100 (or transparency, its inverse)
+# What may be read is set in termmd.toml: [markdown] image-max-size (MiB,
+# default 32) and image-paths ("beside": within the Markdown's directory, the
+# default; "anywhere").
+[image]
+place = "full"
+w = "auto"
+h = "auto"
+max-w = "100%"
+max-h = "50%"
+gap = 1
+min-text = 20
+z = "above"
+
+# Markdown regions drawn as blocks (`OSC 7701 ; md ; place=right w=40% wrap=left`,
+# `termmd --md --place ...`, `lsmd --place ...`): keys a region leaves out come
+# from here, and they are the keys of [image]. With "place" full and no "fixed"
+# a region is rows of the text, as it is by default. A block's height is not
+# given: it grows a row per line. A fixed block takes "h" (else "max-h"), and
+# its content scrolls inside it.
+[block]
+place = "full"
+w = "auto"
+h = "auto"
+max-w = "100%"
+max-h = "50%"
+gap = 1
+min-text = 20
+z = "above"
